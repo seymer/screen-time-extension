@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Time Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="../lib/chart.js"></script>
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                        <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span>Screen Time</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-section="overview">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                        <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                        <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                        <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    Overview
+                </a>
+                <a href="#" class="nav-item" data-section="sites">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                        <path
+                            d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"
+                            stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    All Sites
+                </a>
+                <a href="#" class="nav-item" data-section="timeline">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 8v4l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    Timeline
+                </a>
+                <a href="#" class="nav-item" data-section="limits">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    Limits
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="../settings/settings.html" class="nav-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.84 2.84l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.84-2.84l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.84-2.84l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.84 2.84l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
+                            stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    Settings
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="content-header">
+                <div class="header-left">
+                    <h1 id="pageTitle">Overview</h1>
+                    <p id="dateRange" class="date-range">Today</p>
+                </div>
+                <div class="header-right">
+                    <div class="date-filter">
+                        <button class="filter-btn active" data-range="today">Today</button>
+                        <button class="filter-btn" data-range="week">Week</button>
+                        <button class="filter-btn" data-range="month">Month</button>
+                    </div>
+                    <button id="exportBtn" class="action-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" />
+                            <path d="M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Export
+                    </button>
+                </div>
+            </header>
+
+            <!-- Overview Section -->
+            <section id="overviewSection" class="section active">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2" />
+                                <path d="M12 6v6l4 2" stroke="white" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Total Time</span>
+                            <span id="statTotalTime" class="stat-value">0h 0m</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2" />
+                                <path
+                                    d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"
+                                    stroke="white" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Sites Visited</span>
+                            <span id="statSitesCount" class="stat-value">0</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2v10l4.5 4.5" stroke="white" stroke-width="2" stroke-linecap="round" />
+                                <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Most Used</span>
+                            <span id="statTopSite" class="stat-value">-</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444, #f87171);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="white" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-label">Sessions</span>
+                            <span id="statSessions" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3 class="chart-title">Time Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">Daily Usage (Past 7 Days)</h3>
+                        <div class="chart-container">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Sites -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">Top Sites</h3>
+                    </div>
+                    <div id="topSitesTable" class="sites-table">
+                        <!-- Sites will be populated here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- All Sites Section -->
+            <section id="sitesSection" class="section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">All Visited Sites</h3>
+                        <div class="panel-actions">
+                            <select id="categoryFilter" class="select-input">
+                                <option value="all">All Categories</option>
+                                <option value="Social Media">Social Media</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="Work/Productivity">Work/Productivity</option>
+                                <option value="News">News</option>
+                                <option value="Shopping">Shopping</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <select id="sortBy" class="select-input">
+                                <option value="time">Sort by Time</option>
+                                <option value="name">Sort by Name</option>
+                                <option value="sessions">Sort by Sessions</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="allSitesTable" class="sites-table">
+                        <!-- Sites will be populated here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Timeline Section -->
+            <section id="timelineSection" class="section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">Hourly Activity</h3>
+                    </div>
+                    <div class="chart-container large">
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">Session Timeline</h3>
+                    </div>
+                    <div id="sessionTimeline" class="session-timeline">
+                        <!-- Timeline will be populated here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Limits Section -->
+            <section id="limitsSection" class="section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">Configured Limits</h3>
+                        <button id="addLimitBtn" class="action-btn primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" />
+                            </svg>
+                            Add Limit
+                        </button>
+                    </div>
+                    <div id="limitsTable" class="limits-table">
+                        <!-- Limits will be populated here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Limit Modal -->
+    <div id="limitModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Limit</h2>
+                <button class="modal-close" id="closeModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+            <form id="limitForm" class="modal-body">
+                <div class="form-group">
+                    <label for="limitDomain">Website Domain</label>
+                    <input type="text" id="limitDomain" placeholder="e.g., youtube.com" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dailyLimit">Daily Total Limit</label>
+                        <div class="input-with-suffix">
+                            <input type="number" id="dailyLimit" min="0" placeholder="0">
+                            <span class="suffix">hours</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionCount">Number of Sessions</label>
+                        <input type="number" id="sessionCount" min="1" max="10" placeholder="3">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="perSessionLimit">Per Session Limit</label>
+                        <div class="input-with-suffix">
+                            <input type="number" id="perSessionLimit" min="0" placeholder="0">
+                            <span class="suffix">minutes</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="breakInterval">Break Between Sessions</label>
+                        <div class="input-with-suffix">
+                            <input type="number" id="breakInterval" min="0" placeholder="0">
+                            <span class="suffix">minutes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Blocked Time Ranges</label>
+                    <div id="blockedRanges" class="blocked-ranges">
+                        <!-- Ranges will be added dynamically -->
+                    </div>
+                    <button type="button" id="addRangeBtn" class="add-range-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                        Add Time Range
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label>Enforcement Options</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="hardBlock" checked>
+                            <span>Hard block when limit reached</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showWarnings" checked>
+                            <span>Show countdown warnings</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="emergencyOverride">
+                            <span>Allow emergency override (max 2/day)</span>
+                        </label>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" id="cancelModal" class="btn btn-secondary">Cancel</button>
+                <button type="submit" form="limitForm" class="btn btn-primary">Save Limit</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

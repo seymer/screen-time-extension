@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Screen Time Tracker</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+
+<body>
+    <div class="settings-container">
+        <!-- Header -->
+        <header class="settings-header">
+            <a href="../dashboard/dashboard.html" class="back-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+                Back to Dashboard
+            </a>
+            <h1>Settings</h1>
+        </header>
+
+        <main class="settings-content">
+            <!-- General Settings -->
+            <section class="settings-section">
+                <h2 class="section-title">General</h2>
+
+                <div class="setting-card">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">Idle Timeout</span>
+                            <span class="setting-description">Pause tracking after this period of inactivity</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="idleTimeout" class="select-input">
+                                <option value="15">15 seconds</option>
+                                <option value="30" selected>30 seconds</option>
+                                <option value="60">1 minute</option>
+                                <option value="120">2 minutes</option>
+                                <option value="300">5 minutes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">Data Retention</span>
+                            <span class="setting-description">How long to keep browsing history</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="retentionDays" class="select-input">
+                                <option value="30">30 days</option>
+                                <option value="60">60 days</option>
+                                <option value="90" selected>90 days</option>
+                                <option value="180">180 days</option>
+                                <option value="365">1 year</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">Default Enforcement</span>
+                            <span class="setting-description">How strictly to enforce new limits</span>
+                        </div>
+                        <div class="setting-control">
+                            <select id="defaultEnforcement" class="select-input">
+                                <option value="soft">Soft (warnings only)</option>
+                                <option value="hard" selected>Hard (block access)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Website Limits -->
+            <section class="settings-section">
+                <div class="section-header">
+                    <h2 class="section-title">Website Limits</h2>
+                    <button id="addLimitBtn" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                        Add Limit
+                    </button>
+                </div>
+
+                <div id="limitsContainer" class="limits-container">
+                    <!-- Limits will be populated here -->
+                </div>
+            </section>
+
+            <!-- Categories -->
+            <section class="settings-section">
+                <h2 class="section-title">Categories</h2>
+                <p class="section-description">Assign websites to categories for better organization</p>
+
+                <div id="categoriesContainer" class="categories-container">
+                    <!-- Categories will be populated here -->
+                </div>
+
+                <div class="add-category-form">
+                    <input type="text" id="newDomain" placeholder="Enter domain (e.g., example.com)" class="text-input">
+                    <select id="newCategory" class="select-input">
+                        <option value="Social Media">Social Media</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Work/Productivity">Work/Productivity</option>
+                        <option value="News">News</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <button id="addCategoryBtn" class="btn btn-secondary">Add</button>
+                </div>
+            </section>
+
+            <!-- Data Management -->
+            <section class="settings-section">
+                <h2 class="section-title">Data Management</h2>
+
+                <div class="setting-card">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">Export Data</span>
+                            <span class="setting-description">Download all your tracking data as JSON</span>
+                        </div>
+                        <button id="exportBtn" class="btn btn-secondary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" />
+                                <path d="M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Export
+                        </button>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">Import Data</span>
+                            <span class="setting-description">Restore data from a backup file</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="file" id="importFile" accept=".json" style="display: none;">
+                            <button id="importBtn" class="btn btn-secondary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" />
+                                    <path d="M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                Import
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="setting-row danger">
+                        <div class="setting-info">
+                            <span class="setting-label">Clear All Data</span>
+                            <span class="setting-description">Permanently delete all tracking data and settings</span>
+                        </div>
+                        <button id="clearBtn" class="btn btn-danger">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                <path
+                                    d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                            Clear Data
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- About -->
+            <section class="settings-section">
+                <h2 class="section-title">About</h2>
+                <div class="setting-card">
+                    <div class="about-info">
+                        <p><strong>Screen Time Tracker</strong> v1.0.0</p>
+                        <p class="muted">Track and manage your browsing time with advanced session limits</p>
+                        <p class="muted" style="margin-top: 12px;">All data is stored locally on your device. No data is
+                            sent to external servers.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add/Edit Limit Modal -->
+    <div id="limitModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Website Limit</h2>
+                <button class="modal-close" id="closeModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+            <form id="limitForm" class="modal-body">
+                <div class="form-group">
+                    <label for="limitDomain">Website Domain</label>
+                    <input type="text" id="limitDomain" placeholder="e.g., youtube.com" required class="text-input">
+                    <small class="form-hint">Enter the domain without www (e.g., youtube.com, facebook.com)</small>
+                </div>
+
+                <div class="form-divider">
+                    <span>Time Limits</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dailyLimit">Daily Total Limit</label>
+                        <div class="input-with-suffix">
+                            <input type="number" id="dailyLimit" min="0" max="24" step="0.5" placeholder="0">
+                            <span class="suffix">hours</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionCount">Sessions Per Day</label>
+                        <input type="number" id="sessionCount" min="1" max="20" placeholder="e.g., 3"
+                            class="text-input">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="perSessionLimit">Per Session Limit</label>
+                        <div class="input-with-suffix">
+                            <input type="number" id="perSessionLimit" min="0" max="240" step="5" placeholder="0">
+                            <span class="suffix">minutes</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="breakInterval">Break Between Sessions</label>
+                        <div class="input-with-suffix">
+                            <input type="number" id="breakInterval" min="0" max="480" step="5" placeholder="0">
+                            <span class="suffix">minutes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-divider">
+                    <span>Blocked Time Ranges</span>
+                </div>
+
+                <div class="form-group">
+                    <div id="blockedRanges" class="blocked-ranges">
+                        <!-- Ranges will be added dynamically -->
+                    </div>
+                    <button type="button" id="addRangeBtn" class="add-range-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                        Add Time Range
+                    </button>
+                </div>
+
+                <div class="form-divider">
+                    <span>Enforcement</span>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="hardBlock" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Hard block when limit reached</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showWarnings" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Show countdown warnings (5 min before)</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="emergencyOverride">
+                            <span class="checkbox-custom"></span>
+                            <span>Allow emergency override (max 2/day)</span>
+                        </label>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" id="cancelModal" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="deleteLimitBtn" class="btn btn-danger hidden">Delete</button>
+                <button type="submit" form="limitForm" id="saveLimitBtn" class="btn btn-primary">Save Limit</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+
+</html>

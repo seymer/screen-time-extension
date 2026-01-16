@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Time Tracker</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <header class="popup-header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                        <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span>Screen Time</span>
+                </div>
+                <button id="settingsBtn" class="icon-btn" title="Settings">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-1.42 3.42 2 2 0 01-1.42-.58l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-3.42-1.42 2 2 0 01.58-1.42l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 011.42-3.42 2 2 0 011.42.58l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 013.42 1.42 2 2 0 01-.58 1.42l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
+                            stroke="currentColor" stroke-width="2" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Today's Summary -->
+        <section class="summary-section">
+            <div class="summary-card">
+                <div class="summary-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2v10l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="summary-content">
+                    <span class="summary-label">Today's Screen Time</span>
+                    <span id="totalTime" class="summary-value">0h 0m</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Current Site Status -->
+        <section id="currentSiteSection" class="current-site-section hidden">
+            <h3 class="section-title">Current Site</h3>
+            <div class="current-site-card">
+                <div class="site-header">
+                    <img id="siteFavicon" class="site-favicon" src="" alt="">
+                    <span id="siteDomain" class="site-domain">-</span>
+                    <span id="siteStatus" class="status-badge status-green">Active</span>
+                </div>
+
+                <!-- Session Progress -->
+                <div id="sessionProgress" class="session-progress">
+                    <div class="progress-row">
+                        <span class="progress-label">Session Time</span>
+                        <span id="sessionTime" class="progress-value">0m</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="sessionProgressBar" class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-details">
+                        <span id="sessionRemaining" class="detail-text">-</span>
+                    </div>
+                </div>
+
+                <!-- Daily Progress -->
+                <div id="dailyProgress" class="daily-progress">
+                    <div class="progress-row">
+                        <span class="progress-label">Daily Time</span>
+                        <span id="dailyTime" class="progress-value">0m</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="dailyProgressBar" class="progress-bar progress-bar-blue" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-details">
+                        <span id="dailyRemaining" class="detail-text">-</span>
+                    </div>
+                </div>
+
+                <!-- Sessions Count -->
+                <div id="sessionsCount" class="sessions-count hidden">
+                    <div class="sessions-dots">
+                        <!-- Dots will be added dynamically -->
+                    </div>
+                    <span id="sessionsText" class="sessions-text">-</span>
+                </div>
+                <!-- Limit Controls -->
+                <div class="limit-controls">
+                    <button id="toggleLimitBtn" class="action-btn small">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                        Set Daily Limit
+                    </button>
+
+                    <div id="limitForm" class="limit-form hidden">
+                        <div class="input-group">
+                            <input type="number" id="limitInput" placeholder="Minutes" min="1" max="1440">
+                            <span class="unit">min</span>
+                        </div>
+                        <div class="form-actions">
+                            <button id="saveLimitBtn" class="icon-btn success" title="Save">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                            <button id="removeLimitBtn" class="icon-btn danger hidden" title="Remove Limit">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+        </section>
+
+        <!-- Blocked Status -->
+        <section id="blockedSection" class="blocked-section hidden">
+            <div class="blocked-card">
+                <div class="blocked-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="blocked-content">
+                    <span id="blockedReason" class="blocked-reason">Access Blocked</span>
+                    <span id="blockedNextAvailable" class="blocked-next">-</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Top Sites -->
+        <section class="top-sites-section">
+            <div class="section-header">
+                <h3 class="section-title">Top Sites Today</h3>
+                <button id="dashboardBtn" class="link-btn">See All</button>
+            </div>
+            <div id="topSitesList" class="top-sites-list">
+                <div class="empty-state">No activity yet today</div>
+            </div>
+        </section>
+
+        <!-- Footer Controls -->
+        <footer class="popup-footer">
+            <div class="tracking-toggle">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="trackingToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="trackingLabel">Tracking enabled</span>
+            </div>
+            <button id="dashboardBtnFooter" class="dashboard-btn">
+                Open Dashboard
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" />
+                    <path d="M15 3h6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </button>
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
