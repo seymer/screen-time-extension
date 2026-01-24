@@ -352,7 +352,20 @@ async function saveLimit() {
     return;
   }
 
-  limits[cleanDomain] = {
+  // Get current usage to set offset (limit timing starts from now)
+  const todayKey = new Date().toISOString().split('T')[0];
+  let currentUsage = 0;
+  
+  try {
+    const { dailyUsage = {} } = await chrome.storage.local.get('dailyUsage');
+    if (dailyUsage[todayKey] && dailyUsage[todayKey][cleanDomain]) {
+      currentUsage = dailyUsage[todayKey][cleanDomain].totalTime || 0;
+    }
+  } catch (e) {
+    console.error('Error getting current usage:', e);
+  }
+
+  const limitConfig = {
     dailyTotal: dailyLimit ? dailyLimit * 3600 : null,
     sessionCount: sessionCount || null,
     perSessionLimit: perSessionLimit ? perSessionLimit * 60 : null,
@@ -366,7 +379,20 @@ async function saveLimit() {
     }
   };
 
+  // Set usage offset so limit timing starts from now (not from midnight)
+  if (dailyLimit > 0) {
+    limitConfig.usageOffset = {
+      date: todayKey,
+      duration: currentUsage
+    };
+  }
+
+  limits[cleanDomain] = limitConfig;
+
   await chrome.storage.local.set({ limits });
+
+  // Notify background to re-check limits immediately
+  chrome.runtime.sendMessage({ type: 'LIMITS_UPDATED' });
 
   closeModal();
   renderLimits();
@@ -379,6 +405,9 @@ async function deleteLimit() {
   if (confirm(`Are you sure you want to remove the limit for ${editingDomain}?`)) {
     delete limits[editingDomain];
     await chrome.storage.local.set({ limits });
+
+    // Notify background to re-check limits immediately
+    chrome.runtime.sendMessage({ type: 'LIMITS_UPDATED' });
 
     closeModal();
     renderLimits();

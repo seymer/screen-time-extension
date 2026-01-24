@@ -202,7 +202,15 @@ async function trackUsage() {
             }
         }
 
-        // 4. Update Time for ALL tracked domains
+        // 4. Ensure sessions exist BEFORE updating time (so duration is tracked properly)
+        for (const domain of domainsToTrack) {
+            const currentSessions = await getCurrentSessions();
+            if (!currentSessions[domain]) {
+                await startSession(domain);
+            }
+        }
+
+        // 5. Update Time for ALL tracked domains
         for (const domain of domainsToTrack) {
             // Check limits first
             // Note: If multiple tabs open for same domain, we only check/block once per tick
@@ -217,14 +225,6 @@ async function trackUsage() {
                 active: domain === activeTabDomain,
                 media: isDomainPlayingMedia(domain)
             });
-        }
-
-        // 5. Ensure sessions exist for playing media (if they weren't started by focus)
-        for (const domain of domainsToTrack) {
-            const currentSessions = await getCurrentSessions();
-            if (!currentSessions[domain]) {
-                await startSession(domain);
-            }
         }
 
     } catch (error) {

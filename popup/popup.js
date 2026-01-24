@@ -71,7 +71,8 @@ async function loadTodayStats() {
         // Update top sites list
         updateTopSitesList(stats.topSites || []);
 
-        currentDomain = stats.currentDomain;
+        // Note: currentDomain is set in loadCurrentSiteStatus from the actual tab URL,
+        // not from background's tracked domain (stats.currentDomain)
     } catch (error) {
         console.error('Error loading today stats:', error);
         elements.totalTime.textContent = 'Error';
@@ -87,6 +88,7 @@ async function loadCurrentSiteStatus() {
 
         if (!tab || !tab.url) {
             elements.currentSiteSection.classList.add('hidden');
+            currentDomain = null;
             return;
         }
 
@@ -94,8 +96,12 @@ async function loadCurrentSiteStatus() {
 
         if (!domain || isExcludedDomain(domain)) {
             elements.currentSiteSection.classList.add('hidden');
+            currentDomain = null;
             return;
         }
+
+        // Update currentDomain to match the actual tab domain (used for limit operations)
+        currentDomain = domain;
 
         // Get status for this domain
         const status = await chrome.runtime.sendMessage({
@@ -107,6 +113,7 @@ async function loadCurrentSiteStatus() {
     } catch (error) {
         console.error('Error loading current site status:', error);
         elements.currentSiteSection.classList.add('hidden');
+        currentDomain = null;
     }
 }
 

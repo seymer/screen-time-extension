@@ -213,9 +213,18 @@ export async function canAccessWebsite(domain) {
 
     // Check 4: Current session limit
     if (currentSession && limits.perSessionLimit) {
-        const sessionDuration = Math.floor((currentTime - currentSession.startTime) / 1000);
+        // Get actual accumulated session duration from storage (not calculated from startTime)
+        // This avoids counting idle time as session time
+        let sessionDuration = 0;
+        if (domainUsage.sessions && domainUsage.sessions.length > 0) {
+            const lastSession = domainUsage.sessions[domainUsage.sessions.length - 1];
+            if (lastSession && !lastSession.endTime) {
+                sessionDuration = lastSession.duration || 0;
+            }
+        }
+        
         if (sessionDuration >= limits.perSessionLimit) {
-            const nextAvailable = currentSession.startTime + (limits.perSessionLimit * 1000) +
+            const nextAvailable = currentTime +
                 (limits.minBreakInterval ? limits.minBreakInterval * 1000 : 0);
             return {
                 allowed: false,
@@ -260,7 +269,14 @@ export async function canAccessWebsite(domain) {
     let sessionsRemaining = null;
 
     if (limits.perSessionLimit && currentSession) {
-        const sessionDuration = Math.floor((currentTime - currentSession.startTime) / 1000);
+        // Get actual accumulated session duration from storage
+        let sessionDuration = 0;
+        if (domainUsage.sessions && domainUsage.sessions.length > 0) {
+            const lastSession = domainUsage.sessions[domainUsage.sessions.length - 1];
+            if (lastSession && !lastSession.endTime) {
+                sessionDuration = lastSession.duration || 0;
+            }
+        }
         sessionTimeRemaining = limits.perSessionLimit - sessionDuration;
     } else if (limits.perSessionLimit) {
         sessionTimeRemaining = limits.perSessionLimit;
@@ -340,9 +356,14 @@ export async function getSessionStatus(domain) {
     const currentSessions = await getCurrentSessions();
     const currentSession = currentSessions[domain];
 
+    // Get actual accumulated session duration from storage (not calculated from startTime)
+    // This avoids counting idle time as session time
     let currentSessionDuration = 0;
-    if (currentSession) {
-        currentSessionDuration = Math.floor((Date.now() - currentSession.startTime) / 1000);
+    if (currentSession && usage.sessions.length > 0) {
+        const lastSession = usage.sessions[usage.sessions.length - 1];
+        if (lastSession && !lastSession.endTime) {
+            currentSessionDuration = lastSession.duration || 0;
+        }
     }
 
     const completedSessions = usage.sessions.filter(s => s.endTime).length;
