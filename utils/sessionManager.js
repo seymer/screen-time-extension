@@ -138,16 +138,17 @@ export async function canAccessWebsite(domain) {
     const todayKey = getTodayKey();
     let effectiveTotalTime = domainUsage.totalTime;
 
-    // DEBUG: Log offset calculation
-    // console.log('Checking access for:', domain);
-    // console.log('Total time:', domainUsage.totalTime);
-    // console.log('Limits:', limits);
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/e3ab4947-5180-4656-9d58-22115132ae54',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sessionManager.js:canAccessWebsite',message:'Access check start',data:{domain,totalTime:domainUsage.totalTime,dailyLimit:limits.dailyTotal,usageOffset:limits.usageOffset,todayKey},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
+    // #endregion
 
     if (limits.usageOffset && limits.usageOffset.date === todayKey) {
         effectiveTotalTime = Math.max(0, domainUsage.totalTime - limits.usageOffset.duration);
-        // console.log('Applying offset:', limits.usageOffset.duration);
-        // console.log('Effective time:', effectiveTotalTime);
     }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/e3ab4947-5180-4656-9d58-22115132ae54',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sessionManager.js:canAccessWebsite',message:'Effective time calculated',data:{domain,effectiveTotalTime,dailyLimit:limits.dailyTotal,willBlock:limits.dailyTotal && effectiveTotalTime >= limits.dailyTotal},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
+    // #endregion
 
     // Get current session info
     const currentSessions = await getCurrentSessions();
@@ -348,8 +349,9 @@ export async function getSessionStatus(domain) {
     if (!limits) {
         return {
             hasLimits: false,
+            allowed: true,  // Fix: explicitly set allowed to true when no limits
             totalTimeToday: usage.totalTime,
-            totalTimeFormatted: formatTime(usage.totalTime)
+            totalTimeTodayFormatted: formatTime(usage.totalTime)
         };
     }
 
