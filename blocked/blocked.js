@@ -198,10 +198,18 @@ function updateCountdown() {
       <p class="countdown-label" style="color: #10b981; font-size: 16px;">
         ✓ Access Restored!
       </p>
-      <button onclick="window.location.href='https://${domain}'" class="btn btn-primary" style="margin-top: 16px;">
+      <button id="continueBtn" class="btn btn-primary" style="margin-top: 16px;">
         Continue to ${domain}
       </button>
     `;
+        
+        // Attach event listener for continue button
+        const continueBtn = document.getElementById('continueBtn');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                window.location.href = `https://${domain}`;
+            });
+        }
         return;
     }
 

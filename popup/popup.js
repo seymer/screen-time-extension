@@ -260,11 +260,18 @@ function updateTopSitesList(sites) {
       <img class="site-favicon" 
            src="https://www.google.com/s2/favicons?domain=${site.domain}&sz=32" 
            alt=""
-           onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%236366f1%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
+           data-fallback="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><circle cx='12' cy='12' r='10'/></svg>">
       <span class="site-name">${site.domain}</span>
       <span class="site-time">${formatTime(site.time)}</span>
     </div>
   `).join('');
+
+    // Attach error handlers for favicons
+    elements.topSitesList.querySelectorAll('.site-favicon').forEach(img => {
+        img.addEventListener('error', function() {
+            this.src = this.dataset.fallback || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%236366f1"><circle cx="12" cy="12" r="10"/></svg>';
+        });
+    });
 }
 
 // Setup event listeners

@@ -152,8 +152,7 @@ function renderLimits() {
     <div class="limit-card" data-domain="${domain}">
       <img class="limit-favicon" 
            src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" 
-           alt=""
-           onerror="this.style.display='none'">
+           alt="">
       <div class="limit-info">
         <div class="limit-domain">${domain}</div>
         <div class="limit-details">
@@ -201,6 +200,13 @@ function renderLimits() {
       </div>
     </div>
   `).join('');
+
+  // Attach error handlers for favicons
+  elements.limitsContainer.querySelectorAll('.limit-favicon').forEach(img => {
+    img.addEventListener('error', function() {
+      this.style.display = 'none';
+    });
+  });
 }
 
 // Render categories list
@@ -305,19 +311,25 @@ function closeModal() {
 
 // Add blocked time range
 function addBlockedRange(start = '22:00', end = '08:00') {
-  const rangeHtml = `
-    <div class="blocked-range">
-      <input type="time" class="range-start" value="${start}">
-      <span>to</span>
-      <input type="time" class="range-end" value="${end}">
-      <button type="button" class="remove-range-btn" onclick="this.parentElement.remove()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
+  const rangeDiv = document.createElement('div');
+  rangeDiv.className = 'blocked-range';
+  rangeDiv.innerHTML = `
+    <input type="time" class="range-start" value="${start}">
+    <span>to</span>
+    <input type="time" class="range-end" value="${end}">
+    <button type="button" class="remove-range-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
   `;
-  elements.blockedRanges.insertAdjacentHTML('beforeend', rangeHtml);
+  
+  // Attach event listener for remove button
+  rangeDiv.querySelector('.remove-range-btn').addEventListener('click', function() {
+    rangeDiv.remove();
+  });
+  
+  elements.blockedRanges.appendChild(rangeDiv);
 }
 
 // Save limit

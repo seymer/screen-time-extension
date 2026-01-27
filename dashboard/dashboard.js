@@ -235,7 +235,7 @@ function renderTopSites(sites) {
       <img class="site-favicon" 
            src="https://www.google.com/s2/favicons?domain=${site.domain}&sz=64" 
            alt=""
-           onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%236366f1%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
+           data-fallback="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><circle cx='12' cy='12' r='10'/></svg>">
       <div class="site-info">
         <span class="site-domain">${site.domain}</span>
         <span class="site-sessions">${site.sessions} session${site.sessions !== 1 ? 's' : ''}</span>
@@ -251,6 +251,13 @@ function renderTopSites(sites) {
       </div>
     </div>
   `).join('');
+
+    // Attach error handlers for favicons
+    elements.topSitesTable.querySelectorAll('.site-favicon').forEach(img => {
+        img.addEventListener('error', function() {
+            this.src = this.dataset.fallback || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%236366f1"><circle cx="12" cy="12" r="10"/></svg>';
+        });
+    });
 }
 
 function renderAllSites() {
@@ -285,7 +292,8 @@ function renderAllSites() {
     <div class="site-row">
       <img class="site-favicon" 
            src="https://www.google.com/s2/favicons?domain=${site.domain}&sz=64" 
-           alt="">
+           alt=""
+           data-fallback="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><circle cx='12' cy='12' r='10'/></svg>">
       <div class="site-info">
         <span class="site-domain">${site.domain}</span>
         <span class="site-sessions">${site.sessions} session${site.sessions !== 1 ? 's' : ''}</span>
@@ -301,6 +309,13 @@ function renderAllSites() {
       </div>
     </div>
   `).join('');
+
+    // Attach error handlers for favicons
+    elements.allSitesTable.querySelectorAll('.site-favicon').forEach(img => {
+        img.addEventListener('error', function() {
+            this.src = this.dataset.fallback || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%236366f1"><circle cx="12" cy="12" r="10"/></svg>';
+        });
+    });
 
     // Setup filter listeners
     elements.categoryFilter.onchange = renderAllSites;
@@ -394,7 +409,8 @@ function renderLimits() {
     <div class="limit-row">
       <img class="site-favicon" 
            src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" 
-           alt="">
+           alt=""
+           data-fallback="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><circle cx='12' cy='12' r='10'/></svg>">
       <div class="limit-info">
         <span class="site-domain">${domain}</span>
         <div class="limit-details">
@@ -437,6 +453,13 @@ function renderLimits() {
       </div>
     </div>
   `).join('');
+
+    // Attach error handlers for favicons
+    elements.limitsTable.querySelectorAll('.site-favicon').forEach(img => {
+        img.addEventListener('error', function() {
+            this.src = this.dataset.fallback || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%236366f1"><circle cx="12" cy="12" r="10"/></svg>';
+        });
+    });
 }
 
 // Charts
@@ -715,19 +738,25 @@ function closeModal() {
 }
 
 function addBlockedRange(start = '', end = '') {
-    const rangeHtml = `
-    <div class="blocked-range">
+    const rangeDiv = document.createElement('div');
+    rangeDiv.className = 'blocked-range';
+    rangeDiv.innerHTML = `
       <input type="time" class="range-start" value="${start || '22:00'}">
       <span>to</span>
       <input type="time" class="range-end" value="${end || '08:00'}">
-      <button type="button" class="remove-range-btn" onclick="this.parentElement.remove()">
+      <button type="button" class="remove-range-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
-    </div>
-  `;
-    elements.blockedRanges.insertAdjacentHTML('beforeend', rangeHtml);
+    `;
+    
+    // Attach event listener for remove button
+    rangeDiv.querySelector('.remove-range-btn').addEventListener('click', function() {
+        rangeDiv.remove();
+    });
+    
+    elements.blockedRanges.appendChild(rangeDiv);
 }
 
 async function saveLimit() {
