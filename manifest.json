@@ -9,7 +9,6 @@
         "alarms",
         "notifications",
         "idle",
-        "scripting",
         "declarativeNetRequest"
     ],
     "host_permissions": [
