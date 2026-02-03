@@ -7,6 +7,8 @@ let settings = {};
 let limits = {};
 let categories = {};
 let editingDomain = null;
+let securitySettings = {};
+let isPasswordSet = false;
 
 // DOM Elements
 const elements = {
@@ -31,13 +33,46 @@ const elements = {
   deleteLimitBtn: document.getElementById('deleteLimitBtn'),
   saveLimitBtn: document.getElementById('saveLimitBtn'),
   blockedRanges: document.getElementById('blockedRanges'),
-  addRangeBtn: document.getElementById('addRangeBtn')
+  addRangeBtn: document.getElementById('addRangeBtn'),
+
+  // Security elements
+  securityEnabled: document.getElementById('securityEnabled'),
+  securityOptions: document.getElementById('securityOptions'),
+  setPasswordBtn: document.getElementById('setPasswordBtn'),
+  passwordStatus: document.getElementById('passwordStatus'),
+  requirePasswordForLimits: document.getElementById('requirePasswordForLimits'),
+  requirePasswordForTracking: document.getElementById('requirePasswordForTracking'),
+  requirePasswordForClear: document.getElementById('requirePasswordForClear'),
+  cooldownPeriod: document.getElementById('cooldownPeriod'),
+  maxModsPerDay: document.getElementById('maxModsPerDay'),
+  viewAuditBtn: document.getElementById('viewAuditBtn'),
+
+  // Password modal
+  passwordModal: document.getElementById('passwordModal'),
+  passwordModalTitle: document.getElementById('passwordModalTitle'),
+  passwordForm: document.getElementById('passwordForm'),
+  newPassword: document.getElementById('newPassword'),
+  confirmPassword: document.getElementById('confirmPassword'),
+  currentPassword: document.getElementById('currentPassword'),
+  currentPasswordGroup: document.getElementById('currentPasswordGroup'),
+  closePasswordModal: document.getElementById('closePasswordModal'),
+  cancelPasswordModal: document.getElementById('cancelPasswordModal'),
+  removePasswordBtn: document.getElementById('removePasswordBtn'),
+  savePasswordBtn: document.getElementById('savePasswordBtn'),
+
+  // Audit modal
+  auditModal: document.getElementById('auditModal'),
+  auditLogContainer: document.getElementById('auditLogContainer'),
+  closeAuditModal: document.getElementById('closeAuditModal'),
+  closeAuditBtn: document.getElementById('closeAuditBtn')
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
+  loadSecuritySettings();
   setupEventListeners();
+  setupSecurityListeners();
 });
 
 // Load settings from storage
@@ -203,7 +238,7 @@ function renderLimits() {
 
   // Attach error handlers for favicons
   elements.limitsContainer.querySelectorAll('.limit-favicon').forEach(img => {
-    img.addEventListener('error', function() {
+    img.addEventListener('error', function () {
       this.style.display = 'none';
     });
   });
@@ -323,12 +358,12 @@ function addBlockedRange(start = '22:00', end = '08:00') {
       </svg>
     </button>
   `;
-  
+
   // Attach event listener for remove button
-  rangeDiv.querySelector('.remove-range-btn').addEventListener('click', function() {
+  rangeDiv.querySelector('.remove-range-btn').addEventListener('click', function () {
     rangeDiv.remove();
   });
-  
+
   elements.blockedRanges.appendChild(rangeDiv);
 }
 
@@ -343,6 +378,38 @@ async function saveLimit() {
 
   // Clean domain
   const cleanDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+
+  // Security check: Check if modification is allowed
+  try {
+    const password = await checkPasswordRequired('MODIFY_LIMIT');
+
+    // Check modification limits
+    const modCheck = await chrome.runtime.sendMessage({
+      type: 'CAN_MODIFY_LIMITS',
+      domain: cleanDomain
+    });
+
+    if (!modCheck.allowed) {
+      alert(modCheck.message);
+      return;
+    }
+
+    // If password was required and provided, verify it
+    if (password) {
+      const response = await chrome.runtime.sendMessage({
+        type: 'VERIFY_PASSWORD',
+        password
+      });
+
+      if (!response.valid) {
+        alert('Invalid password');
+        return;
+      }
+    }
+  } catch (error) {
+    alert(error.message);
+    return;
+  }
 
   const dailyLimit = parseFloat(document.getElementById('dailyLimit').value) || 0;
   const sessionCount = parseInt(document.getElementById('sessionCount').value) || 0;
@@ -367,7 +434,7 @@ async function saveLimit() {
   // Get current usage to set offset (limit timing starts from now)
   const todayKey = new Date().toISOString().split('T')[0];
   let currentUsage = 0;
-  
+
   try {
     const { dailyUsage = {} } = await chrome.storage.local.get('dailyUsage');
     if (dailyUsage[todayKey] && dailyUsage[todayKey][cleanDomain]) {
@@ -403,6 +470,14 @@ async function saveLimit() {
 
   await chrome.storage.local.set({ limits });
 
+  // Record modification for security tracking
+  try {
+    const { recordModification } = await import('../utils/security.js');
+    await recordModification('MODIFY_LIMIT', cleanDomain);
+  } catch (e) {
+    console.error('Failed to record modification:', e);
+  }
+
   // Notify background to re-check limits immediately
   chrome.runtime.sendMessage({ type: 'LIMITS_UPDATED' });
 
@@ -414,9 +489,37 @@ async function saveLimit() {
 async function deleteLimit() {
   if (!editingDomain) return;
 
+  // Security check
+  try {
+    const password = await checkPasswordRequired('DELETE_LIMIT');
+
+    if (password) {
+      const response = await chrome.runtime.sendMessage({
+        type: 'VERIFY_PASSWORD',
+        password
+      });
+
+      if (!response.valid) {
+        alert('Invalid password');
+        return;
+      }
+    }
+  } catch (error) {
+    alert(error.message);
+    return;
+  }
+
   if (confirm(`Are you sure you want to remove the limit for ${editingDomain}?`)) {
     delete limits[editingDomain];
     await chrome.storage.local.set({ limits });
+
+    // Record modification for security tracking
+    try {
+      const { recordModification } = await import('../utils/security.js');
+      await recordModification('DELETE_LIMIT', editingDomain);
+    } catch (e) {
+      console.error('Failed to record modification:', e);
+    }
 
     // Notify background to re-check limits immediately
     chrome.runtime.sendMessage({ type: 'LIMITS_UPDATED' });
@@ -468,6 +571,26 @@ async function importData(event) {
 
 // Clear all data
 async function clearData() {
+  // Security check
+  try {
+    const password = await checkPasswordRequired('CLEAR_DATA');
+
+    if (password) {
+      const response = await chrome.runtime.sendMessage({
+        type: 'VERIFY_PASSWORD',
+        password
+      });
+
+      if (!response.valid) {
+        alert('Invalid password');
+        return;
+      }
+    }
+  } catch (error) {
+    alert(error.message);
+    return;
+  }
+
   if (confirm('This will permanently delete ALL tracking data and settings. This action cannot be undone.\n\nAre you sure you want to continue?')) {
     if (confirm('Are you REALLY sure? All data will be lost forever.')) {
       await chrome.storage.local.clear();
@@ -497,4 +620,271 @@ function formatTime(seconds) {
     return `${hours}h ${minutes}m`;
   }
   return `${minutes}m`;
+}
+
+// =====================
+// Security Functions
+// =====================
+
+// Load security settings
+async function loadSecuritySettings() {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'GET_SECURITY_SETTINGS' });
+    securitySettings = response.settings || {};
+    isPasswordSet = response.passwordSet || false;
+
+    // Update UI
+    elements.securityEnabled.checked = securitySettings.enabled || false;
+    elements.securityOptions.classList.toggle('hidden', !securitySettings.enabled);
+
+    elements.requirePasswordForLimits.checked = securitySettings.requirePasswordForLimitChanges !== false;
+    elements.requirePasswordForTracking.checked = securitySettings.requirePasswordForDisableTracking !== false;
+    elements.requirePasswordForClear.checked = securitySettings.requirePasswordForDataClear !== false;
+    elements.cooldownPeriod.value = securitySettings.cooldownPeriod || 3600;
+    elements.maxModsPerDay.value = securitySettings.maxModificationsPerDay || 3;
+
+    updatePasswordStatus();
+  } catch (error) {
+    console.error('Error loading security settings:', error);
+  }
+}
+
+// Update password status display
+function updatePasswordStatus() {
+  if (isPasswordSet) {
+    elements.passwordStatus.textContent = 'Password is set';
+    elements.setPasswordBtn.textContent = 'Change Password';
+  } else {
+    elements.passwordStatus.textContent = 'No password set';
+    elements.setPasswordBtn.textContent = 'Set Password';
+  }
+}
+
+// Save security settings
+async function saveSecuritySettings() {
+  try {
+    const newSettings = {
+      enabled: elements.securityEnabled.checked,
+      requirePasswordForLimitChanges: elements.requirePasswordForLimits.checked,
+      requirePasswordForDisableTracking: elements.requirePasswordForTracking.checked,
+      requirePasswordForDataClear: elements.requirePasswordForClear.checked,
+      cooldownPeriod: parseInt(elements.cooldownPeriod.value),
+      maxModificationsPerDay: parseInt(elements.maxModsPerDay.value)
+    };
+
+    // Import security module dynamically
+    const { updateSecuritySettings } = await import('../utils/security.js');
+    await updateSecuritySettings(newSettings);
+
+    securitySettings = newSettings;
+  } catch (error) {
+    console.error('Error saving security settings:', error);
+    alert('Failed to save security settings');
+  }
+}
+
+// Open password modal
+function openPasswordModal() {
+  elements.passwordForm.reset();
+
+  if (isPasswordSet) {
+    elements.passwordModalTitle.textContent = 'Change Security Password';
+    elements.currentPasswordGroup.classList.remove('hidden');
+    elements.removePasswordBtn.classList.remove('hidden');
+  } else {
+    elements.passwordModalTitle.textContent = 'Set Security Password';
+    elements.currentPasswordGroup.classList.add('hidden');
+    elements.removePasswordBtn.classList.add('hidden');
+  }
+
+  elements.passwordModal.classList.remove('hidden');
+}
+
+// Close password modal
+function closePasswordModal() {
+  elements.passwordModal.classList.add('hidden');
+  elements.passwordForm.reset();
+}
+
+// Save password
+async function savePassword(event) {
+  event.preventDefault();
+
+  const newPassword = elements.newPassword.value;
+  const confirmPassword = elements.confirmPassword.value;
+  const currentPassword = elements.currentPassword.value;
+
+  if (newPassword !== confirmPassword) {
+    alert('Passwords do not match');
+    return;
+  }
+
+  if (newPassword.length < 4) {
+    alert('Password must be at least 4 characters');
+    return;
+  }
+
+  try {
+    const { setSecurityPassword, verifyPassword } = await import('../utils/security.js');
+
+    // If password already exists, verify current password
+    if (isPasswordSet) {
+      if (!currentPassword) {
+        alert('Please enter your current password');
+        return;
+      }
+
+      const isValid = await verifyPassword(currentPassword);
+      if (!isValid) {
+        alert('Current password is incorrect');
+        return;
+      }
+    }
+
+    await setSecurityPassword(newPassword);
+    isPasswordSet = true;
+    updatePasswordStatus();
+    closePasswordModal();
+    alert('Password saved successfully');
+  } catch (error) {
+    console.error('Error saving password:', error);
+    alert('Failed to save password: ' + error.message);
+  }
+}
+
+// Remove password
+async function removePassword() {
+  const currentPassword = elements.currentPassword.value;
+
+  if (!currentPassword) {
+    alert('Please enter your current password');
+    return;
+  }
+
+  if (!confirm('Are you sure you want to remove the security password? This will disable password protection.')) {
+    return;
+  }
+
+  try {
+    const { removePassword: removePass } = await import('../utils/security.js');
+    await removePass(currentPassword);
+    isPasswordSet = false;
+    updatePasswordStatus();
+    closePasswordModal();
+
+    // Disable security if password is removed
+    elements.securityEnabled.checked = false;
+    await saveSecuritySettings();
+    elements.securityOptions.classList.add('hidden');
+
+    alert('Password removed successfully');
+  } catch (error) {
+    console.error('Error removing password:', error);
+    alert('Failed to remove password: ' + error.message);
+  }
+}
+
+// Open audit log modal
+async function openAuditLog() {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'GET_AUDIT_LOG', limit: 100 });
+    const log = response.log || [];
+
+    if (log.length === 0) {
+      elements.auditLogContainer.innerHTML = '<p class="empty-state">No audit log entries yet</p>';
+    } else {
+      elements.auditLogContainer.innerHTML = log.map(entry => `
+        <div class="audit-entry">
+          <div class="audit-header">
+            <span class="audit-action">${entry.action}</span>
+            <span class="audit-time">${new Date(entry.timestamp).toLocaleString()}</span>
+          </div>
+          <div class="audit-description">${entry.description}</div>
+          ${entry.metadata ? `<div class="audit-metadata">${JSON.stringify(entry.metadata)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    elements.auditModal.classList.remove('hidden');
+  } catch (error) {
+    console.error('Error loading audit log:', error);
+    alert('Failed to load audit log');
+  }
+}
+
+// Close audit modal
+function closeAuditModal() {
+  elements.auditModal.classList.add('hidden');
+}
+
+// Check if action requires password
+async function checkPasswordRequired(action) {
+  if (!securitySettings.enabled || !isPasswordSet) {
+    return null; // No password required
+  }
+
+  const requiresPassword = {
+    'MODIFY_LIMIT': securitySettings.requirePasswordForLimitChanges,
+    'DELETE_LIMIT': securitySettings.requirePasswordForLimitChanges,
+    'CLEAR_DATA': securitySettings.requirePasswordForDataClear
+  };
+
+  if (requiresPassword[action]) {
+    const password = prompt('Enter security password:');
+    if (!password) {
+      throw new Error('Password required');
+    }
+
+    const response = await chrome.runtime.sendMessage({
+      type: 'VERIFY_PASSWORD',
+      password
+    });
+
+    if (!response.valid) {
+      throw new Error('Invalid password');
+    }
+
+    return password;
+  }
+
+  return null;
+}
+
+// Setup security event listeners
+function setupSecurityListeners() {
+  // Security enabled toggle
+  elements.securityEnabled.addEventListener('change', async () => {
+    if (elements.securityEnabled.checked && !isPasswordSet) {
+      alert('Please set a security password first');
+      elements.securityEnabled.checked = false;
+      openPasswordModal();
+      return;
+    }
+
+    elements.securityOptions.classList.toggle('hidden', !elements.securityEnabled.checked);
+    await saveSecuritySettings();
+  });
+
+  // Security settings changes
+  elements.requirePasswordForLimits.addEventListener('change', saveSecuritySettings);
+  elements.requirePasswordForTracking.addEventListener('change', saveSecuritySettings);
+  elements.requirePasswordForClear.addEventListener('change', saveSecuritySettings);
+  elements.cooldownPeriod.addEventListener('change', saveSecuritySettings);
+  elements.maxModsPerDay.addEventListener('change', saveSecuritySettings);
+
+  // Password modal
+  elements.setPasswordBtn.addEventListener('click', openPasswordModal);
+  elements.closePasswordModal.addEventListener('click', closePasswordModal);
+  elements.cancelPasswordModal.addEventListener('click', closePasswordModal);
+  elements.passwordForm.addEventListener('submit', savePassword);
+  elements.removePasswordBtn.addEventListener('click', removePassword);
+
+  // Audit log
+  elements.viewAuditBtn.addEventListener('click', openAuditLog);
+  elements.closeAuditModal.addEventListener('click', closeAuditModal);
+  elements.closeAuditBtn.addEventListener('click', closeAuditModal);
+
+  // Close modals on backdrop click
+  elements.passwordModal.querySelector('.modal-backdrop')?.addEventListener('click', closePasswordModal);
+  elements.auditModal.querySelector('.modal-backdrop')?.addEventListener('click', closeAuditModal);
 }

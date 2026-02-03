@@ -75,6 +75,116 @@
                 </div>
             </section>
 
+            <!-- Security Settings -->
+            <section class="settings-section">
+                <h2 class="section-title">Security & Protection</h2>
+                <p class="section-description">Protect your limits from being bypassed or modified</p>
+
+                <div class="setting-card">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-label">Enable Security Protection</span>
+                            <span class="setting-description">Require password for sensitive operations</span>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="securityEnabled">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="securityOptions" class="security-options hidden">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-label">Security Password</span>
+                                <span class="setting-description" id="passwordStatus">No password set</span>
+                            </div>
+                            <button id="setPasswordBtn" class="btn btn-secondary">Set Password</button>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-label">Require Password for Limit Changes</span>
+                                <span class="setting-description">Prevent unauthorized limit modifications</span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="requirePasswordForLimits" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-label">Require Password to Disable Tracking</span>
+                                <span class="setting-description">Prevent disabling the tracker</span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="requirePasswordForTracking" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-label">Require Password to Clear Data</span>
+                                <span class="setting-description">Protect against data deletion</span>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="requirePasswordForClear" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-label">Modification Cooldown Period</span>
+                                <span class="setting-description">Minimum time between limit changes</span>
+                            </div>
+                            <div class="setting-control">
+                                <select id="cooldownPeriod" class="select-input">
+                                    <option value="1800">30 minutes</option>
+                                    <option value="3600" selected>1 hour</option>
+                                    <option value="7200">2 hours</option>
+                                    <option value="14400">4 hours</option>
+                                    <option value="28800">8 hours</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-label">Max Limit Modifications Per Day</span>
+                                <span class="setting-description">Prevent excessive limit changes</span>
+                            </div>
+                            <div class="setting-control">
+                                <select id="maxModsPerDay" class="select-input">
+                                    <option value="1">1 time</option>
+                                    <option value="2">2 times</option>
+                                    <option value="3" selected>3 times</option>
+                                    <option value="5">5 times</option>
+                                    <option value="10">10 times</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <span class="setting-label">View Audit Log</span>
+                                <span class="setting-description">See all security-related actions</span>
+                            </div>
+                            <button id="viewAuditBtn" class="btn btn-secondary">View Log</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Website Limits -->
             <section class="settings-section">
                 <div class="section-header">
@@ -286,6 +396,68 @@
                 <button type="button" id="cancelModal" class="btn btn-secondary">Cancel</button>
                 <button type="button" id="deleteLimitBtn" class="btn btn-danger hidden">Delete</button>
                 <button type="submit" form="limitForm" id="saveLimitBtn" class="btn btn-primary">Save Limit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 id="passwordModalTitle">Set Security Password</h2>
+                <button class="modal-close" id="closePasswordModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+            <form id="passwordForm" class="modal-body">
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" placeholder="Enter password" required class="text-input"
+                        minlength="4">
+                    <small class="form-hint">Minimum 4 characters</small>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirm password" required
+                        class="text-input">
+                </div>
+                <div id="currentPasswordGroup" class="form-group hidden">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" placeholder="Enter current password" class="text-input">
+                    <small class="form-hint">Required to change or remove password</small>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" id="cancelPasswordModal" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="removePasswordBtn" class="btn btn-danger hidden">Remove Password</button>
+                <button type="submit" form="passwordForm" id="savePasswordBtn" class="btn btn-primary">Save
+                    Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Log Modal -->
+    <div id="auditModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>Security Audit Log</h2>
+                <button class="modal-close" id="closeAuditModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="auditLogContainer" class="audit-log-container">
+                    <!-- Audit log entries will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closeAuditBtn" class="btn btn-secondary">Close</button>
             </div>
         </div>
     </div>

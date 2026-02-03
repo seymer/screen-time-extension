@@ -35,6 +35,15 @@ import {
     canUseEmergencyOverride
 } from './utils/sessionManager.js';
 
+import {
+    canPerformAction,
+    logAudit,
+    isLocked,
+    lockSettings,
+    getSecuritySettings,
+    recordModification
+} from './utils/security.js';
+
 // Constants
 const TRACKING_INTERVAL = 10000; // 10 seconds
 const IDLE_THRESHOLD = 30; // 30 seconds
@@ -547,6 +556,22 @@ async function handleMessage(message, sender) {
             return await getUsageData(message.startDate, message.endDate);
 
         case 'TOGGLE_TRACKING':
+            // Security check: prevent disabling tracking without password
+            if (!message.enabled) {
+                const permCheck = await canPerformAction('DISABLE_TRACKING', message.password);
+                if (!permCheck.allowed) {
+                    await logAudit('BLOCKED_TRACKING_DISABLE', `Attempt to disable tracking blocked: ${permCheck.reason}`);
+                    return {
+                        success: false,
+                        error: permCheck.message,
+                        reason: permCheck.reason,
+                        requiresPassword: permCheck.reason === 'password_required'
+                    };
+                }
+                await logAudit('TRACKING_DISABLED', 'Tracking was disabled');
+            } else {
+                await logAudit('TRACKING_ENABLED', 'Tracking was enabled');
+            }
             await setTrackingEnabled(message.enabled);
             return { success: true };
 
@@ -609,6 +634,31 @@ async function handleMessage(message, sender) {
             // Also update blocking rules just in case
             await updateBlockingRules();
             return { success: true };
+
+        // Security-related messages
+        case 'VERIFY_PASSWORD':
+            const { verifyPassword } = await import('./utils/security.js');
+            const isValid = await verifyPassword(message.password);
+            return { valid: isValid };
+
+        case 'GET_SECURITY_SETTINGS':
+            const securitySettings = await getSecuritySettings();
+            const passwordSet = await (await import('./utils/security.js')).isPasswordSet();
+            return { settings: securitySettings, passwordSet };
+
+        case 'GET_AUDIT_LOG':
+            const { getAuditLog } = await import('./utils/security.js');
+            const log = await getAuditLog(message.limit || 50);
+            return { log };
+
+        case 'CHECK_LOCK_STATUS':
+            const lockStatus = await isLocked();
+            return lockStatus;
+
+        case 'CAN_MODIFY_LIMITS':
+            const { canModifyLimits } = await import('./utils/security.js');
+            const modCheck = await canModifyLimits(message.domain);
+            return modCheck;
 
         default:
             return { error: 'Unknown message type' };
