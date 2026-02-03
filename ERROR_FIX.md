@@ -15,50 +15,41 @@ Error loading security settings: Error: A listener indicated an asynchronous res
 3. 如果后台发生错误，前端直接访问 `modCheck.allowed` 可能导致逻辑错乱。
 
 **修复内容**:
-在 `settings.js` 的 `saveLimit`, `deleteLimit`, 和 `clearData` 函数中添加了严格的空值检查和错误处理：
+在 `settings.js` 的 `saveLimit`, `deleteLimit`, 和 `clearData` 函数中添加了严格的空值检查和错误处理。
 
-```javascript
-/* 修复前 */
-const modCheck = await chrome.runtime.sendMessage({...});
-if (!modCheck.allowed) {
-  alert(modCheck.message); // 可能弹出 undefined
-  return;
-}
-
-/* 修复后 */
-const modCheck = await chrome.runtime.sendMessage({...});
-
-if (!modCheck) {
-  console.error('No response');
-  return;
-}
-
-if (modCheck.error) {
-  alert('Error: ' + modCheck.error);
-  return;
-}
-
-if (!modCheck.allowed) {
-  // 确保有默认消息
-  alert(modCheck.message || 'Action not allowed');
-  return;
-}
+## 问题 3: Service Worker 中通过 import() 动态导入被禁止 (已修复)
+```
+Error: import() is disallowed on ServiceWorkerGlobalScope by the HTML specification.
 ```
 
-同时对 `catch` 块也进行了增强：
-```javascript
-} catch (error) {
-  console.error('Security check error:', error);
-  // 确保 error.message 存在
-  alert(error.message || 'Security check failed');
-  return;
-}
-```
+**原因**: Chrome Extension Manifest V3 的 Service Worker 不允许使用 `await import(...)` 动态导入。必须在文件顶部使用静态 `import`。
+
+**修复内容**:
+1. 修改 `background.js`，在顶部静态导入所有需要的安全函数：
+   ```javascript
+   import {
+       // ... existing imports
+       verifyPassword,
+       isPasswordSet,
+       getAuditLog,
+       canModifyLimits
+   } from './utils/security.js';
+   ```
+2. 移除 `handleMessage` 函数中所有的动态导入语句：
+   ```javascript
+   /* 之前 */
+   case 'VERIFY_PASSWORD':
+       const { verifyPassword } = await import('./utils/security.js');
+   
+   /* 之后 */
+   case 'VERIFY_PASSWORD':
+       // 直接使用 verifyPassword
+   ```
 
 ## 测试步骤
 
 1. **重新加载扩展**
-   - 确保最新的 `settings.js` 代码已加载。
+   - 确保最新的 `background.js` 代码已加载。
 2. **测试限制保存**
    - 尝试修改一个现有的限制。
    - 验证如果被拦截，是否显示正确的错误消息（如 "Please wait..." 或 "Password required"）。

@@ -41,7 +41,11 @@ import {
     isLocked,
     lockSettings,
     getSecuritySettings,
-    recordModification
+    recordModification,
+    verifyPassword,
+    isPasswordSet,
+    getAuditLog,
+    canModifyLimits
 } from './utils/security.js';
 
 // Constants
@@ -643,20 +647,17 @@ async function handleMessage(message, sender) {
 
             // Security-related messages
             case 'VERIFY_PASSWORD': {
-                const { verifyPassword } = await import('./utils/security.js');
                 const isValid = await verifyPassword(message.password);
                 return { valid: isValid };
             }
 
             case 'GET_SECURITY_SETTINGS': {
-                const { getSecuritySettings, isPasswordSet } = await import('./utils/security.js');
                 const securitySettings = await getSecuritySettings();
                 const passwordSet = await isPasswordSet();
                 return { settings: securitySettings, passwordSet };
             }
 
             case 'GET_AUDIT_LOG': {
-                const { getAuditLog } = await import('./utils/security.js');
                 const log = await getAuditLog(message.limit || 50);
                 return { log };
             }
@@ -667,7 +668,6 @@ async function handleMessage(message, sender) {
             }
 
             case 'CAN_MODIFY_LIMITS': {
-                const { canModifyLimits } = await import('./utils/security.js');
                 const modCheck = await canModifyLimits(message.domain);
                 return modCheck;
             }
