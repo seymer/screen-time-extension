@@ -540,128 +540,144 @@ function sendNotification(title, message) {
 // =====================
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    handleMessage(message, sender).then(sendResponse);
+    handleMessage(message, sender)
+        .then(sendResponse)
+        .catch(error => {
+            console.error('Error handling message:', error);
+            sendResponse({ error: error.message || 'Unknown error' });
+        });
     return true; // Keep channel open for async response
 });
 
 async function handleMessage(message, sender) {
-    switch (message.type) {
-        case 'GET_STATUS':
-            return await getStatusForPopup(message.domain);
+    try {
+        switch (message.type) {
+            case 'GET_STATUS':
+                return await getStatusForPopup(message.domain);
 
-        case 'GET_TODAY_STATS':
-            return await getTodayStats();
+            case 'GET_TODAY_STATS':
+                return await getTodayStats();
 
-        case 'GET_USAGE_DATA':
-            return await getUsageData(message.startDate, message.endDate);
+            case 'GET_USAGE_DATA':
+                return await getUsageData(message.startDate, message.endDate);
 
-        case 'TOGGLE_TRACKING':
-            // Security check: prevent disabling tracking without password
-            if (!message.enabled) {
-                const permCheck = await canPerformAction('DISABLE_TRACKING', message.password);
-                if (!permCheck.allowed) {
-                    await logAudit('BLOCKED_TRACKING_DISABLE', `Attempt to disable tracking blocked: ${permCheck.reason}`);
-                    return {
-                        success: false,
-                        error: permCheck.message,
-                        reason: permCheck.reason,
-                        requiresPassword: permCheck.reason === 'password_required'
-                    };
-                }
-                await logAudit('TRACKING_DISABLED', 'Tracking was disabled');
-            } else {
-                await logAudit('TRACKING_ENABLED', 'Tracking was enabled');
-            }
-            await setTrackingEnabled(message.enabled);
-            return { success: true };
-
-        case 'REQUEST_OVERRIDE':
-            return await handleOverrideRequest(message.domain);
-
-        case 'GET_CURRENT_DOMAIN':
-            return { domain: currentDomain };
-
-        case 'ACTIVITY_UPDATE':
-            if (sender.tab && sender.tab.id) {
-                const tabId = sender.tab.id;
-                const frameId = sender.frameId || 0;
-                const domain = sender.tab.url ? extractDomain(sender.tab.url) : null;
-
-                if (message.isMediaPlaying) {
-                    if (!activeMediaTabs.has(tabId)) {
-                        activeMediaTabs.set(tabId, { frames: new Set(), domain: domain });
+            case 'TOGGLE_TRACKING':
+                // Security check: prevent disabling tracking without password
+                if (!message.enabled) {
+                    const permCheck = await canPerformAction('DISABLE_TRACKING', message.password);
+                    if (!permCheck.allowed) {
+                        await logAudit('BLOCKED_TRACKING_DISABLE', `Attempt to disable tracking blocked: ${permCheck.reason}`);
+                        return {
+                            success: false,
+                            error: permCheck.message,
+                            reason: permCheck.reason,
+                            requiresPassword: permCheck.reason === 'password_required'
+                        };
                     }
-                    const tabData = activeMediaTabs.get(tabId);
-                    tabData.frames.add(frameId);
-                    if (domain) tabData.domain = domain; // Update domain if available
-
-                    // Force wake up if was idle (optional - user preference?)
-                    // For now, let's say media playing means "active" usage regardless of mouse
-                    // but we don't necessarily need to set isIdle=false global flag
-                    // because trackUsage handles the distinction.
-
-                    // Actually, if media starts playing, we should ensure a session exists
-                    if (domain) {
-                        const currentSessions = await getCurrentSessions();
-                        if (!currentSessions[domain]) {
-                            await startSession(domain);
-                        }
-                    }
-
+                    await logAudit('TRACKING_DISABLED', 'Tracking was disabled');
                 } else {
-                    if (activeMediaTabs.has(tabId)) {
-                        const tabData = activeMediaTabs.get(tabId);
-                        tabData.frames.delete(frameId);
-                        if (tabData.frames.size === 0) {
-                            activeMediaTabs.delete(tabId);
+                    await logAudit('TRACKING_ENABLED', 'Tracking was enabled');
+                }
+                await setTrackingEnabled(message.enabled);
+                return { success: true };
 
-                            // If this was the only thing keeping the domain active (and user is idle or elsewhere)
-                            // check if we should close session
-                            if (domain && !isDomainPlayingMedia(domain) && (domain !== currentDomain || isIdle)) {
-                                await endSession(domain);
+            case 'REQUEST_OVERRIDE':
+                return await handleOverrideRequest(message.domain);
+
+            case 'GET_CURRENT_DOMAIN':
+                return { domain: currentDomain };
+
+            case 'ACTIVITY_UPDATE':
+                if (sender.tab && sender.tab.id) {
+                    const tabId = sender.tab.id;
+                    const frameId = sender.frameId || 0;
+                    const domain = sender.tab.url ? extractDomain(sender.tab.url) : null;
+
+                    if (message.isMediaPlaying) {
+                        if (!activeMediaTabs.has(tabId)) {
+                            activeMediaTabs.set(tabId, { frames: new Set(), domain: domain });
+                        }
+                        const tabData = activeMediaTabs.get(tabId);
+                        tabData.frames.add(frameId);
+                        if (domain) tabData.domain = domain; // Update domain if available
+
+                        // Force wake up if was idle (optional - user preference?)
+                        // For now, let's say media playing means "active" usage regardless of mouse
+                        // but we don't necessarily need to set isIdle=false global flag
+                        // because trackUsage handles the distinction.
+
+                        // Actually, if media starts playing, we should ensure a session exists
+                        if (domain) {
+                            const currentSessions = await getCurrentSessions();
+                            if (!currentSessions[domain]) {
+                                await startSession(domain);
+                            }
+                        }
+
+                    } else {
+                        if (activeMediaTabs.has(tabId)) {
+                            const tabData = activeMediaTabs.get(tabId);
+                            tabData.frames.delete(frameId);
+                            if (tabData.frames.size === 0) {
+                                activeMediaTabs.delete(tabId);
+
+                                // If this was the only thing keeping the domain active (and user is idle or elsewhere)
+                                // check if we should close session
+                                if (domain && !isDomainPlayingMedia(domain) && (domain !== currentDomain || isIdle)) {
+                                    await endSession(domain);
+                                }
                             }
                         }
                     }
                 }
+                return { success: true };
+
+            case 'LIMITS_UPDATED':
+                // Immediate check to enforce new/removed limits
+                await trackUsage();
+                // Check if any currently blocked tabs should be unblocked
+                await recheckBlockedTabs();
+                // Also update blocking rules just in case
+                await updateBlockingRules();
+                return { success: true };
+
+            // Security-related messages
+            case 'VERIFY_PASSWORD': {
+                const { verifyPassword } = await import('./utils/security.js');
+                const isValid = await verifyPassword(message.password);
+                return { valid: isValid };
             }
-            return { success: true };
 
-        case 'LIMITS_UPDATED':
-            // Immediate check to enforce new/removed limits
-            await trackUsage();
-            // Check if any currently blocked tabs should be unblocked
-            await recheckBlockedTabs();
-            // Also update blocking rules just in case
-            await updateBlockingRules();
-            return { success: true };
+            case 'GET_SECURITY_SETTINGS': {
+                const { getSecuritySettings, isPasswordSet } = await import('./utils/security.js');
+                const securitySettings = await getSecuritySettings();
+                const passwordSet = await isPasswordSet();
+                return { settings: securitySettings, passwordSet };
+            }
 
-        // Security-related messages
-        case 'VERIFY_PASSWORD':
-            const { verifyPassword } = await import('./utils/security.js');
-            const isValid = await verifyPassword(message.password);
-            return { valid: isValid };
+            case 'GET_AUDIT_LOG': {
+                const { getAuditLog } = await import('./utils/security.js');
+                const log = await getAuditLog(message.limit || 50);
+                return { log };
+            }
 
-        case 'GET_SECURITY_SETTINGS':
-            const securitySettings = await getSecuritySettings();
-            const passwordSet = await (await import('./utils/security.js')).isPasswordSet();
-            return { settings: securitySettings, passwordSet };
+            case 'CHECK_LOCK_STATUS': {
+                const lockStatus = await isLocked();
+                return lockStatus;
+            }
 
-        case 'GET_AUDIT_LOG':
-            const { getAuditLog } = await import('./utils/security.js');
-            const log = await getAuditLog(message.limit || 50);
-            return { log };
+            case 'CAN_MODIFY_LIMITS': {
+                const { canModifyLimits } = await import('./utils/security.js');
+                const modCheck = await canModifyLimits(message.domain);
+                return modCheck;
+            }
 
-        case 'CHECK_LOCK_STATUS':
-            const lockStatus = await isLocked();
-            return lockStatus;
-
-        case 'CAN_MODIFY_LIMITS':
-            const { canModifyLimits } = await import('./utils/security.js');
-            const modCheck = await canModifyLimits(message.domain);
-            return modCheck;
-
-        default:
-            return { error: 'Unknown message type' };
+            default:
+                return { error: 'Unknown message type' };
+        }
+    } catch (error) {
+        console.error('Error in handleMessage:', error);
+        return { error: error.message || 'Internal error' };
     }
 }
 

@@ -630,8 +630,24 @@ function formatTime(seconds) {
 async function loadSecuritySettings() {
   try {
     const response = await chrome.runtime.sendMessage({ type: 'GET_SECURITY_SETTINGS' });
-    securitySettings = response.settings || {};
-    isPasswordSet = response.passwordSet || false;
+
+    // Check if response is valid
+    if (!response || response.error) {
+      console.error('Failed to load security settings:', response?.error);
+      // Use default values
+      securitySettings = {
+        enabled: false,
+        requirePasswordForLimitChanges: true,
+        requirePasswordForDisableTracking: true,
+        requirePasswordForDataClear: true,
+        cooldownPeriod: 3600,
+        maxModificationsPerDay: 3
+      };
+      isPasswordSet = false;
+    } else {
+      securitySettings = response.settings || {};
+      isPasswordSet = response.passwordSet || false;
+    }
 
     // Update UI
     elements.securityEnabled.checked = securitySettings.enabled || false;
@@ -646,6 +662,21 @@ async function loadSecuritySettings() {
     updatePasswordStatus();
   } catch (error) {
     console.error('Error loading security settings:', error);
+    // Set default values on error
+    securitySettings = {
+      enabled: false,
+      requirePasswordForLimitChanges: true,
+      requirePasswordForDisableTracking: true,
+      requirePasswordForDataClear: true,
+      cooldownPeriod: 3600,
+      maxModificationsPerDay: 3
+    };
+    isPasswordSet = false;
+
+    // Still update UI with defaults
+    elements.securityEnabled.checked = false;
+    elements.securityOptions.classList.add('hidden');
+    updatePasswordStatus();
   }
 }
 
