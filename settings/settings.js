@@ -389,8 +389,18 @@ async function saveLimit() {
       domain: cleanDomain
     });
 
+    if (!modCheck) {
+      console.error('No response for limit check');
+      return;
+    }
+
+    if (modCheck.error) {
+      alert('Error: ' + modCheck.error);
+      return;
+    }
+
     if (!modCheck.allowed) {
-      alert(modCheck.message);
+      alert(modCheck.message || 'Action not allowed');
       return;
     }
 
@@ -401,13 +411,19 @@ async function saveLimit() {
         password
       });
 
+      if (!response || response.error) {
+        alert('Verification error: ' + (response?.error || 'Unknown'));
+        return;
+      }
+
       if (!response.valid) {
         alert('Invalid password');
         return;
       }
     }
   } catch (error) {
-    alert(error.message);
+    console.error('Security check error:', error);
+    alert(error.message || 'Security check failed');
     return;
   }
 
@@ -499,13 +515,19 @@ async function deleteLimit() {
         password
       });
 
+      if (!response || response.error) {
+        alert('Verification error: ' + (response?.error || 'Unknown'));
+        return;
+      }
+
       if (!response.valid) {
         alert('Invalid password');
         return;
       }
     }
   } catch (error) {
-    alert(error.message);
+    console.error('Security check error:', error);
+    alert(error.message || 'Security check failed');
     return;
   }
 
@@ -581,13 +603,19 @@ async function clearData() {
         password
       });
 
+      if (!response || response.error) {
+        alert('Verification error: ' + (response?.error || 'Unknown'));
+        return;
+      }
+
       if (!response.valid) {
         alert('Invalid password');
         return;
       }
     }
   } catch (error) {
-    alert(error.message);
+    console.error('Security check error:', error);
+    alert(error.message || 'Security check failed');
     return;
   }
 
