@@ -266,10 +266,8 @@ async function handleDomainChange(oldDomain, newDomain) {
 
     // Check if blocked
     const accessCheck = await canAccessWebsite(newDomain);
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/e3ab4947-5180-4656-9d58-22115132ae54',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'background.js:handleDomainChange',message:'Domain change access check',data:{oldDomain,newDomain,allowed:accessCheck.allowed,reason:accessCheck.reason,hasLimits:accessCheck.hasLimits},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
+
+
 
     if (!accessCheck.allowed) {
         await blockCurrentTab(accessCheck);
@@ -282,9 +280,7 @@ async function checkLimitsAndUpdateBadge(domain, isFocused) {
 
     const status = await getSessionStatus(domain);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/e3ab4947-5180-4656-9d58-22115132ae54',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'background.js:checkLimitsAndUpdateBadge',message:'Checking limits',data:{domain,isFocused,hasLimits:status.hasLimits,allowed:status.allowed,reason:status.reason,totalTimeToday:status.totalTimeToday,dailyTimeRemaining:status.dailyTimeRemaining},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
+
 
     if (updateUI && !status.hasLimits) {
         updateBadge('', '#4CAF50');
@@ -292,9 +288,7 @@ async function checkLimitsAndUpdateBadge(domain, isFocused) {
     }
 
     if (!status.allowed) {
-        // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/e3ab4947-5180-4656-9d58-22115132ae54',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'background.js:checkLimitsAndUpdateBadge',message:'BLOCKING TRIGGERED',data:{domain,reason:status.reason,reasonText:status.reasonText},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
+
 
         if (updateUI) updateBadge('!', '#F44336');
 
@@ -352,9 +346,7 @@ async function blockTab(tabId, accessCheck) {
             nextAvailable: accessCheck.nextAvailable?.toString() || ''
         });
 
-        // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/e3ab4947-5180-4656-9d58-22115132ae54',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'background.js:blockTab',message:'EXECUTING BLOCK',data:{tabId,domain:extractDomain(tab.url),reason:accessCheck.reason,reasonText:accessCheck.reasonText,allowed:accessCheck.allowed},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D,E'})}).catch(()=>{});
-        // #endregion
+
 
         await chrome.tabs.update(tabId, {
             url: `${blockedUrl}?${params.toString()}`
@@ -484,10 +476,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
         if (domain && !isExcludedDomain(domain)) {
             // Check if blocked
             const accessCheck = await canAccessWebsite(domain);
-            
-            // #region agent log
-            fetch('http://127.0.0.1:7244/ingest/e3ab4947-5180-4656-9d58-22115132ae54',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'background.js:onUpdated',message:'Tab updated access check',data:{tabId,domain,allowed:accessCheck.allowed,reason:accessCheck.reason,hasLimits:accessCheck.hasLimits},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-            // #endregion
+
+
 
             if (!accessCheck.allowed) {
                 await blockCurrentTab(accessCheck);
